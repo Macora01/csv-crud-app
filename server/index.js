@@ -218,6 +218,17 @@ app.get('/api/download/:filename', (req, res) => {
   });
 });
 
+// ... (deja todo el código de las rutas /api/ como está)
+
+// Servir archivos estáticos de la aplicación React (en producción)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Para cualquier otra ruta que no sea una API, enviar el index.html de React
+// Esto es crucial para que React Router maneje la navegación en el cliente
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
