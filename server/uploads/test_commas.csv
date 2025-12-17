@@ -1,4 +1,4 @@
-cod_fabrica,lugar,timestamp,cod_venta,descripcion,precio
-8511,A01 - Vivo Los Trapenses - Paz,2025-10-17 10:00:00,PO9876Z,Camisa de Algodón Orgánico,25000
-8511,A01 - Vivo Los Trapenses - Paz,2025-10-17 11:30:00,QR5432Y,Jeans Slim Fit Classic,55000
-8511,A01 - Vivo Los Trapenses - Paz,2025-10-17 14:00:00,ST1123A,Chaqueta de Cuero Genuine,120000
+lugar,cod_venta,cod_fabrica,descripcion,timestamp,precio
+A01 - Vivo Los Trapenses - Paz,PO9876Z,8511,Camisa de Algodón Orgánico,2025-10-17 10:00:00,25000
+A01 - Vivo Los Trapenses - Paz,QR5432Y,8511,Jeans Slim Fit Classic,2025-10-17 11:30:00,55000
+A01 - Vivo Los Trapenses - Paz,ST1123A,8511,Chaqueta de Cuero Genuine,2025-10-17 14:00:00,120000

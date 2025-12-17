@@ -196,32 +196,11 @@ const CsvViewer: React.FC = () => {
                   <th key={header}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{header}</span>
-                        <div className="column-actions">
-                        <button
-                            className="column-action-btn"
-                            onClick={() => moveColumn(index, 'up')}
-                            disabled={index === 0 || saving}
-                            title="Mover a la izquierda"
-                        >
-                            ◀
-                        </button>
-                        <button
-                            className="column-action-btn"
-                            onClick={() => moveColumn(index, 'down')}
-                            disabled={index === headers.length - 1 || saving}
-                            title="Mover a la derecha"
-                        >
-                            ▶
-                        </button>
-                        <button
-                            className="column-action-btn"
-                            onClick={() => deleteColumn(index)}
-                            disabled={saving}
-                            title="Eliminar columna"
-                        >
-                            ✕
-                        </button>
-                        </div>
+                      <div className="column-actions">
+                        <button className="column-action-btn" onClick={() => moveColumn(index, 'up')} disabled={index === 0 || saving} title="Mover arriba">▲</button>
+                        <button className="column-action-btn" onClick={() => moveColumn(index, 'down')} disabled={index === headers.length - 1 || saving} title="Mover abajo">▼</button>
+                        <button className="column-action-btn" onClick={() => deleteColumn(index)} disabled={saving} title="Eliminar columna">✕</button>
+                      </div>
                     </div>
                   </th>
                 ))}

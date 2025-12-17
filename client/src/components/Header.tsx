@@ -1,52 +1,37 @@
+// client/src/components/Header.tsx
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
   return (
-    <header className="bg-primary-color text-white shadow-md">
-      <div className="container mx-auto px-4 py-4">
+    <header className="bg-primary-color text-white shadow-md border-b border-accent-color">
+      <div className="container mx-auto px-4 py-3">
         <Link 
           to="/" 
           className="flex items-center space-x-3 text-2xl font-bold hover:text-accent-color transition-colors"
+          title="Inicio"
         >
-          {/* Icono de base de datos */}
-          <svg 
-            className="w-8 h-8" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path 
-              d="M21 12C21 13.66 16.97 15 12 15C7.03 15 3 13.66 3 12" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            />
-            <path 
-              d="M3 5V19C3 20.66 7.03 22 12 22C16.97 22 21 20.66 21 19V5" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            />
-            <ellipse 
-              cx="12" 
-              cy="5" 
-              rx="9" 
-              ry="3" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            />
-          </svg>
-          
+          {/* El SVG del icono ha sido eliminado */}
           <span>CRUD CSV</span>
         </Link>
+        
+        <nav>
+          <ul className="flex items-center space-x-8">
+            <li>
+              <Link 
+                to="/" 
+                className="nav-link relative text-base font-medium transition-colors duration-300 hover:text-accent-color py-1"
+              >
+                Archivos
+              </Link>
+            </li>
+          </ul>
+        </nav>
       </div>
     </header>
   );
 };
 
 export default Header;
+

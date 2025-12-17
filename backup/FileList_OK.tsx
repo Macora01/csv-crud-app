@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react'; // <-- ¡AÑADIMOS useCallback!
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom'; // <-- ¡IMPORTANTE! useLocation está aquí
 import axios from 'axios';
 
 interface RowData {
@@ -8,12 +8,12 @@ interface RowData {
 
 const CsvViewer: React.FC = () => {
   const { filename } = useParams<{ filename: string }>();
-  const location = useLocation();
+  const location = useLocation(); // <-- ¡IMPORTANTE! Obtenemos la ubicación para acceder al estado
   const navigate = useNavigate();
   
+  // Obtenemos el separador del estado pasado por el modal, con ',' como fallback
   const initialSeparator = (location.state?.separator as string) || ',';
-  // No necesitamos el setter del separador, así que lo eliminamos.
-  const separator = initialSeparator;
+  const [separator, setSeparator] = useState(initialSeparator);
 
   const [data, setData] = useState<RowData[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -26,11 +26,18 @@ const CsvViewer: React.FC = () => {
   const [formData, setFormData] = useState<RowData>({});
   const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
 
-  // Envuelve fetchData en useCallback para que no se recree en cada render
-  const fetchData = useCallback(async () => {
+  // Añadimos 'separator' a las dependencias para recargar si cambia
+  useEffect(() => {
+    if (filename) {
+      fetchData();
+    }
+  }, [filename, separator]);
+
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/file/${encodeURIComponent(filename!)}?separator=${separator}`);
+      // <-- ¡CLAVE! Aquí sí pasamos el separador en la URL
+      const response = await axios.get(`/api/file/${encodeURIComponent(filename!)}?separator=${separator!}`);
       setData(response.data);
       if (response.data.length > 0) {
         setHeaders(Object.keys(response.data[0]));
@@ -42,13 +49,7 @@ const CsvViewer: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filename, separator]); // Las dependencias de fetchData
-
-  useEffect(() => {
-    if (filename) {
-      fetchData();
-    }
-  }, [filename, fetchData]); // Ahora fetchData es una dependencia segura
+  };
 
   const saveStructure = async (newHeaders: string[], currentData: RowData[]) => {
     setSaving(true);
@@ -61,7 +62,8 @@ const CsvViewer: React.FC = () => {
         return newRow;
       });
 
-      await axios.put(`/api/file/${encodeURIComponent(filename!)}/structure`, { newData, separator });
+      // <-- ¡CLAVE! Aquí también pasamos el separador en el body
+      await axios.put(`/api/file/${encodeURIComponent(filename!)}/structure`, { newData, separator: separator! });
       setMessage({ type: 'success', text: 'Estructura de columnas actualizada' });
       setHeaders(newHeaders);
     } catch (err) {
@@ -100,7 +102,8 @@ const CsvViewer: React.FC = () => {
 
   const handleAddRow = async () => {
     try {
-      await axios.post(`/api/file/${encodeURIComponent(filename!)}/row`, { newRow: formData, separator });
+      // <-- ¡CLAVE! Pasamos el separador en el body
+      await axios.post(`/api/file/${encodeURIComponent(filename!)}/row`, { newRow: formData, separator: separator! });
       setMessage({ type: 'success', text: 'Fila agregada exitosamente' });
       setShowAddModal(false);
       setFormData({});
@@ -119,7 +122,8 @@ const CsvViewer: React.FC = () => {
 
   const handleUpdateRow = async () => {
     try {
-      await axios.put(`/api/file/${encodeURIComponent(filename!)}/row/${editingIndex!}`, { updatedRow: formData, separator });
+      // <-- ¡CLAVE! Pasamos el separador en el body
+      await axios.put(`/api/file/${encodeURIComponent(filename!)}/row/${editingIndex!}`, { updatedRow: formData, separator: separator! });
       setMessage({ type: 'success', text: 'Fila actualizada exitosamente' });
       setShowEditModal(false);
       setEditingIndex(null);
@@ -134,7 +138,8 @@ const CsvViewer: React.FC = () => {
   const handleDeleteRow = async (index: number) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar esta fila?')) {
       try {
-        await axios.delete(`/api/file/${encodeURIComponent(filename!)}/row/${index}?separator=${separator}`);
+        // <-- ¡CLAVE! Pasamos el separador en la URL
+        await axios.delete(`/api/file/${encodeURIComponent(filename!)}/row/${index}?separator=${separator!}`);
         setMessage({ type: 'success', text: 'Fila eliminada exitosamente' });
         fetchData();
       } catch (err) {
@@ -146,6 +151,7 @@ const CsvViewer: React.FC = () => {
 
   const handleDownload = async () => {
     try {
+      // <-- ¡CLAVE! Usamos el método robusto de descarga con blob
       const response = await axios.get(`/api/download/${encodeURIComponent(filename!)}`, {
         responseType: 'blob',
       });
@@ -196,32 +202,11 @@ const CsvViewer: React.FC = () => {
                   <th key={header}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{header}</span>
-                        <div className="column-actions">
-                        <button
-                            className="column-action-btn"
-                            onClick={() => moveColumn(index, 'up')}
-                            disabled={index === 0 || saving}
-                            title="Mover a la izquierda"
-                        >
-                            ◀
-                        </button>
-                        <button
-                            className="column-action-btn"
-                            onClick={() => moveColumn(index, 'down')}
-                            disabled={index === headers.length - 1 || saving}
-                            title="Mover a la derecha"
-                        >
-                            ▶
-                        </button>
-                        <button
-                            className="column-action-btn"
-                            onClick={() => deleteColumn(index)}
-                            disabled={saving}
-                            title="Eliminar columna"
-                        >
-                            ✕
-                        </button>
-                        </div>
+                      <div className="column-actions">
+                        <button className="column-action-btn" onClick={() => moveColumn(index, 'up')} disabled={index === 0 || saving} title="Mover arriba">▲</button>
+                        <button className="column-action-btn" onClick={() => moveColumn(index, 'down')} disabled={index === headers.length - 1 || saving} title="Mover abajo">▼</button>
+                        <button className="column-action-btn" onClick={() => deleteColumn(index)} disabled={saving} title="Eliminar columna">✕</button>
+                      </div>
                     </div>
                   </th>
                 ))}

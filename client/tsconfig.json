@@ -22,5 +22,5 @@
   },
   "include": [
     "src"
-  ]
+, "../backup/CsvViewer_OK.tsx", "../backup/FileList_OK.tsx", "../backup/Header_ok.tsx"  ]
 }
