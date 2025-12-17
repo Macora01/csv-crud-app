@@ -229,6 +229,49 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Nueva ruta para actualizar la estructura completa del archivo (reordenar/eliminar columnas)
+app.put('/api/file/:filename/structure', async (req, res) => {
+  const filename = req.params.filename;
+  const newData = req.body; // Esperamos un array de objetos con la nueva estructura
+  const filePath = path.join(uploadsDir, filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Archivo no encontrado' });
+  }
+
+  if (!Array.isArray(newData) || newData.length === 0) {
+    // Si no hay datos, creamos un archivo vacío o solo con encabezados si existen
+    const headers = newData.length > 0 ? Object.keys(newData[0]) : [];
+    if (headers.length > 0) {
+        const csvWriter = createCsvWriter({
+            path: filePath,
+            header: headers.map(h => ({id: h, title: h}))
+        });
+        await csvWriter.writeRecords([]);
+    }
+    return res.json({ message: 'Estructura actualizada (archivo vacío)' });
+  }
+
+  try {
+    // Obtener los nuevos encabezados del primer objeto del array
+    const newHeaders = Object.keys(newData[0]);
+
+    // Crear el csvWriter con los nuevos encabezados
+    const csvWriter = createCsvWriter({
+      path: filePath,
+      header: newHeaders.map(h => ({ id: h, title: h }))
+    });
+
+    // Escribir todos los datos con la nueva estructura
+    await csvWriter.writeRecords(newData);
+
+    res.json({ message: 'Estructura y datos del archivo actualizados exitosamente' });
+  } catch (error) {
+    console.error('Error updating file structure:', error);
+    res.status(500).json({ error: 'Error al actualizar la estructura del archivo' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

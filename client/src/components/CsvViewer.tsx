@@ -12,6 +12,7 @@ const CsvViewer: React.FC = () => {
   const [data, setData] = useState<RowData[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false); // Para guardar cambios de estructura
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -28,7 +29,6 @@ const CsvViewer: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // CORRECCIÓN: Eliminamos encodeURIComponent() porque React Router ya lo hizo.
       const response = await axios.get(`/api/file/${filename}`);
       setData(response.data);
       if (response.data.length > 0) {
@@ -43,9 +43,63 @@ const CsvViewer: React.FC = () => {
     }
   };
 
+  // Función para guardar la nueva estructura en el backend
+  const saveStructure = async (newHeaders: string[], currentData: RowData[]) => {
+    setSaving(true);
+    try {
+      // Re-mapear los datos para que coincidan con la nueva estructura de columnas
+      const newData = currentData.map(row => {
+        const newRow: RowData = {};
+        newHeaders.forEach(header => {
+          newRow[header] = row[header] || ''; // Mantener el valor o añadir celda vacía si es nueva
+        });
+        return newRow;
+      });
+
+      await axios.put(`/api/file/${filename}/structure`, newData);
+      setMessage({ type: 'success', text: 'Estructura de columnas actualizada' });
+      setHeaders(newHeaders); // Actualizar el estado de los encabezados
+    } catch (err) {
+      console.error('Error saving structure:', err);
+      setMessage({ type: 'error', text: 'Error al guardar la estructura' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Funciones para manipular columnas
+  const moveColumn = (index: number, direction: 'up' | 'down') => {
+    if (
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === headers.length - 1)
+    ) {
+      return;
+    }
+
+    const newHeaders = [...headers];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    [newHeaders[index], newHeaders[targetIndex]] = [newHeaders[targetIndex], newHeaders[index]];
+    
+    saveStructure(newHeaders, data);
+  };
+
+  const deleteColumn = (index: number) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta columna y todos sus datos?')) {
+      const headerToDelete = headers[index];
+      const newHeaders = headers.filter((_, i) => i !== index);
+      const newData = data.map(row => {
+        const newRow = { ...row };
+        delete newRow[headerToDelete];
+        return newRow;
+      });
+
+      saveStructure(newHeaders, newData);
+    }
+  };
+
+  // ... (El resto de las funciones handleAddRow, handleEditRow, etc., permanecen igual)
   const handleAddRow = async () => {
     try {
-      // CORRECCIÓN: También aquí eliminamos encodeURIComponent().
       await axios.post(`/api/file/${filename}/row`, formData);
       setMessage({ type: 'success', text: 'Fila agregada exitosamente' });
       setShowAddModal(false);
@@ -65,7 +119,6 @@ const CsvViewer: React.FC = () => {
 
   const handleUpdateRow = async () => {
     try {
-      // CORRECCIÓN: Y aquí también.
       await axios.put(`/api/file/${filename}/row/${editingIndex}`, formData);
       setMessage({ type: 'success', text: 'Fila actualizada exitosamente' });
       setShowEditModal(false);
@@ -81,7 +134,6 @@ const CsvViewer: React.FC = () => {
   const handleDeleteRow = async (index: number) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar esta fila?')) {
       try {
-        // CORRECCIÓN: Y también en la eliminación.
         await axios.delete(`/api/file/${filename}/row/${index}`);
         setMessage({ type: 'success', text: 'Fila eliminada exitosamente' });
         fetchData();
@@ -94,7 +146,6 @@ const CsvViewer: React.FC = () => {
 
   const handleDownload = async () => {
     try {
-      // CORRECCIÓN: Y también en la descarga.
       window.open(`/api/download/${filename}`, '_blank');
     } catch (err) {
       console.error('Error downloading file:', err);
@@ -114,22 +165,13 @@ const CsvViewer: React.FC = () => {
           {decodeURIComponent(filename || '')}
         </h2>
         <div className="flex gap-2">
-          <button
-            onClick={() => navigate('/')}
-            className="btn btn-secondary"
-          >
+          <button onClick={() => navigate('/')} className="btn btn-secondary">
             Volver
           </button>
-          <button
-            onClick={handleDownload}
-            className="btn btn-primary"
-          >
+          <button onClick={handleDownload} className="btn btn-primary">
             Descargar CSV
           </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="btn btn-primary"
-          >
+          <button onClick={() => setShowAddModal(true)} className="btn btn-primary">
             Agregar Fila
           </button>
         </div>
@@ -151,7 +193,37 @@ const CsvViewer: React.FC = () => {
             <thead>
               <tr>
                 {headers.map((header, index) => (
-                  <th key={index}>{header}</th>
+                  <th key={header}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{header}</span>
+                      <div className="column-actions">
+                        <button
+                          className="column-action-btn"
+                          onClick={() => moveColumn(index, 'up')}
+                          disabled={index === 0 || saving}
+                          title="Mover arriba"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          className="column-action-btn"
+                          onClick={() => moveColumn(index, 'down')}
+                          disabled={index === headers.length - 1 || saving}
+                          title="Mover abajo"
+                        >
+                          ▼
+                        </button>
+                        <button
+                          className="column-action-btn"
+                          onClick={() => deleteColumn(index)}
+                          disabled={saving}
+                          title="Eliminar columna"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  </th>
                 ))}
                 <th>Acciones</th>
               </tr>
@@ -159,21 +231,15 @@ const CsvViewer: React.FC = () => {
             <tbody>
               {data.map((row, rowIndex) => (
                 <tr key={rowIndex}>
-                  {headers.map((header, cellIndex) => (
-                    <td key={cellIndex}>{row[header]}</td>
+                  {headers.map((header) => (
+                    <td key={header}>{row[header]}</td>
                   ))}
                   <td>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditRow(rowIndex)}
-                        className="btn btn-secondary"
-                      >
+                      <button onClick={() => handleEditRow(rowIndex)} className="btn btn-secondary">
                         Editar
                       </button>
-                      <button
-                        onClick={() => handleDeleteRow(rowIndex)}
-                        className="btn btn-danger"
-                      >
+                      <button onClick={() => handleDeleteRow(rowIndex)} className="btn btn-danger">
                         Eliminar
                       </button>
                     </div>
@@ -185,16 +251,14 @@ const CsvViewer: React.FC = () => {
         </div>
       )}
 
+      {/* Los modales para Agregar y Editar filas permanecen igual */}
       {/* Modal para agregar fila */}
       {showAddModal && (
         <div className="modal">
           <div className="modal-content">
             <div className="modal-header">
               <h3 className="modal-title">Agregar Nueva Fila</h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="modal-close"
-              >
+              <button onClick={() => setShowAddModal(false)} className="modal-close">
                 &times;
               </button>
             </div>
@@ -213,16 +277,10 @@ const CsvViewer: React.FC = () => {
               ))}
             </div>
             <div className="modal-footer">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="btn btn-secondary"
-              >
+              <button onClick={() => setShowAddModal(false)} className="btn btn-secondary">
                 Cancelar
               </button>
-              <button
-                onClick={handleAddRow}
-                className="btn btn-primary"
-              >
+              <button onClick={handleAddRow} className="btn btn-primary">
                 Agregar
               </button>
             </div>
@@ -236,10 +294,7 @@ const CsvViewer: React.FC = () => {
           <div className="modal-content">
             <div className="modal-header">
               <h3 className="modal-title">Editar Fila</h3>
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="modal-close"
-              >
+              <button onClick={() => setShowEditModal(false)} className="modal-close">
                 &times;
               </button>
             </div>
@@ -258,16 +313,10 @@ const CsvViewer: React.FC = () => {
               ))}
             </div>
             <div className="modal-footer">
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="btn btn-secondary"
-              >
+              <button onClick={() => setShowEditModal(false)} className="btn btn-secondary">
                 Cancelar
               </button>
-              <button
-                onClick={handleUpdateRow}
-                className="btn btn-primary"
-              >
+              <button onClick={handleUpdateRow} className="btn btn-primary">
                 Actualizar
               </button>
             </div>

@@ -236,3 +236,67 @@ code {
 .nav-link:hover::after {
   width: 100%; /* Al hacer hover, la línea crece al 100% */
 }
+
+/* ... (resto de tu CSS) */
+
+.table-container {
+  overflow-x: auto;
+  margin-top: 20px;
+  border: 1px solid var(--accent-color); /* Borde exterior de la tabla */
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse; /* Importante para que los bordes se unan */
+  margin: 0; /* Quitar margen por defecto */
+  /* ---- LÍNEA CLAVE A AÑADIR ---- */
+  table-layout: fixed;
+  /* ----------------------------- */
+}
+
+.table th,
+.table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-right: 1px solid var(--accent-color); /* Borde derecho */
+  border-bottom: 1px solid var(--accent-color); /* Borde inferior */
+  word-wrap: break-word; /* Añadido para que el texto largo no rompa el diseño */
+}
+
+.table th:last-child,
+.table td:last-child {
+  border-right: none; /* Quitar borde de la última celda */
+}
+
+.table th {
+  background-color: var(--accent-color);
+  color: var(--text-color);
+  font-weight: 600;
+  position: relative; /* Para posicionar los botones de acción */
+}
+
+/* Estilos para los botones de acción de columna */
+.column-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+}
+
+.column-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--text-light);
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.column-action-btn:hover {
+  color: var(--primary-color);
+  background-color: var(--white);
+}
